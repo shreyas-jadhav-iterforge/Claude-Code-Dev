@@ -300,14 +300,16 @@ pre .file { color: var(--term-muted); font-style: italic; }
   border-radius: 10px;
   padding: 1rem 1.1rem 1.1rem;
   border-top: 6px solid var(--after);
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
+  display: grid;
+  grid-row: span 4;
+  grid-template-rows: subgrid;
+  align-content: start;
+  row-gap: 0.45rem;
 }
 .habit::before { content: counter(habit); font-size: 2.4rem; font-weight: 800; line-height: 1; color: var(--line); }
 .habit h3 { margin: 0; font-size: 1.25rem; font-weight: 800; letter-spacing: -0.01em; }
 .habit p { margin: 0; color: var(--muted); }
-.habit .links { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: auto; padding-top: 0.5rem; }
+.habit .links { display: flex; flex-direction: column; align-items: flex-start; gap: 0.4rem; align-self: start; padding-top: 0.5rem; }
 .habit .links button {
   border: 1px solid var(--line);
   background: var(--sunk);
@@ -330,6 +332,16 @@ pre .file { color: var(--term-muted); font-style: italic; }
 @media (max-width: 860px) {
   .intro-split, .habits { grid-template-columns: minmax(0, 1fr); }
   .rail .group { display: none; }
+}
+
+.rail .more a {
+  display: block; margin: 1.2rem 0.5rem 0; padding: 0.55rem 0.75rem;
+  border: 1px dashed var(--line); border-radius: 6px;
+  color: var(--ink); text-decoration: none; font-weight: 700; font-size: 0.95rem;
+}
+.rail .more a:hover { border-color: var(--ink); background: var(--sunk); }
+@media (max-width: 860px) {
+  .rail .more a { margin: 0; white-space: nowrap; border-radius: 999px; padding: 0.45rem 0.9rem; }
 }
 
 /* Notes */
@@ -487,7 +499,7 @@ kbd {
           </ul>
         </div>
       </div>
-      <p class="intro-foot">Each example shows the same task twice: how most people ask, and what works better. Press → to start, or pick an example above.</p>
+      <p class="intro-foot">Each example shows the same task twice: how most people ask, and what works better. Press → to start, or pick an example above. Three extra patterns are in <a href="https://claude.ai/artifact/3HAwxA4o6X9vshGwy5HC6M" target="_blank" rel="noopener">More examples</a>.</p>
     </section>
     <section class="panes" id="panes" aria-live="polite"></section>
     <section class="notes" id="notes" hidden>
@@ -797,67 +809,64 @@ Done!`,
   },
   {
     title: "Write it once in CLAUDE.md",
-    lesson: "One file in the repo turns your team’s rules into defaults Claude follows in every session.",
+    lesson: "One file in the repo teaches Claude your project: its structure, commands and coding standards.",
     before: {
       setupLabel: "New session, no CLAUDE.md",
-      setup: `> Send a welcome email when a customer signs up`,
-      visuals: [{ caption: "Without CLAUDE.md, Claude has to guess", svg: vFlow("Only the prompt goes in, so Claude guesses and breaks team rules", "What Claude gets", [["Prompt: send a welcome email", "chip"]], "What you get", [["A new email library", "bad"], ["Customer emails in the logs", "bad"], ["Committed straight to main", "bad"]]) }],
-      result: `@ Created send-welcome.ts
-! npm install nodemailer   (we already have EmailService)
-! console.log("Sent to", customer.email)
-! No tests added
-! Committed to main: "welcome email"
-Done!
-
-# Next session: you explain the same rules again`,
+      setup: `> Add an endpoint that returns a customer’s order history`,
+      visuals: [{ caption: "Without CLAUDE.md, Claude has to guess", svg: vFlow("Only the prompt goes in, so Claude guesses the structure and standards", "What Claude gets", [["Prompt: order history endpoint", "chip"]], "What you get", [["One JS file, logic in the route", "bad"], ["Raw SQL, errors swallowed", "bad"], ["No tests", "bad"]]) }],
+      result: `@ Created routes/getOrders.js
+! JavaScript file in a TypeScript project
+! All the logic written inside the route handler
+! db.query("... WHERE id = " + req.params.id)
+! catch (e) { console.log(e) }
+! No input validation, no tests
+Done!`,
       verdicts: [
-        "Added a second way to send email",
-        "Customer email addresses end up in the logs",
-        "No tests, no review, no ticket"
+        "Ignores the project’s structure and language",
+        "Unsafe raw SQL and swallowed errors",
+        "Nothing tested, so review has to catch it all"
       ]
     },
     after: {
       setupLabel: "CLAUDE.md in the repo root",
-      setup: `# Shop platform
+      setup: `# Shop API
+Node + TypeScript REST API for the storefront.
 
 ## Commands
-- Run tests: npm test
+- Dev: npm run dev
+- Test: npm test
+- Lint: npm run lint
 
-## How we build
-- Send emails only through EmailService
-- Never log customer details (email, phone, address)
+## Project structure
+- src/routes/    thin HTTP handlers only
+- src/services/  business logic
+- src/repos/     database access, query builder only
 
-## Ask first
-- Before adding any new library
+## Code standards
+- TypeScript strict, no \`any\`
+- Validate request input with zod
+- Throw AppError, never swallow errors
+- Tests sit next to the file: *.test.ts
 
 ## Git
-- Never commit to main. Branch: feature/<short-name>
-- Commit messages start with the ticket: [SHOP-123]`,
-      visuals: [{ caption: "With CLAUDE.md, the team’s rules come along automatically", svg: vFlow("The prompt plus CLAUDE.md go in, so Claude follows team rules", "What Claude gets", [["Prompt: send a welcome email", "chip"], ["CLAUDE.md: team rules", "good"]], "What you get", [["Uses the existing EmailService", "good"], ["Logs the customer ID only", "good"], ["Branch, test, ticketed commit", "good"]]) }],
-      result: `> Send a welcome email when a customer signs up
-@ Edited signup.ts
-+ Uses EmailService.send('welcome', customer)
-+ Logs "Welcome email sent" with the customer ID only
-Which ticket is this for?
-> SHOP-512
-+ Added test: signing up sends one welcome email
-+ npm test   passed
-+ Branch feature/welcome-email
-+ Commit "[SHOP-512] Send welcome email on signup"`,
+- Branch feature/<name>, commits start with [SHOP-123]`,
+      visuals: [{ caption: "With CLAUDE.md, the team’s standards come along automatically", svg: vFlow("The prompt plus CLAUDE.md go in, so Claude follows the structure and standards", "What Claude gets", [["Prompt: order history endpoint", "chip"], ["CLAUDE.md: team standards", "good"]], "What you get", [["Route, service and repo layers", "good"], ["Validated input, typed errors", "good"], ["Tests and lint pass", "good"]]) }],
+      result: `> Add an endpoint that returns a customer’s order history
+@ src/routes/orders.route.ts     GET /customers/:id/orders
+@ src/services/order.service.ts  getHistory()
+@ src/repos/order.repo.ts        query builder, paginated
++ Input validated with zod
++ Errors raised as AppError
++ order.service.test.ts   4 passed
++ npm run lint   clean`,
       verdicts: [
-        "Reuses the team’s email service",
-        "Keeps customer details out of the logs",
-        "Tested, on a branch, with a ticketed commit"
-      ],
-      howto: [
-        "Run /init to generate a first draft from your repo, then trim it",
-        "Keep it short and specific: it’s loaded into every session, so every line costs context",
-        "Commit it and review changes to it like code",
-        "Add a CLAUDE.md inside a folder for rules that only apply there"
+        "Code lands where the team expects it",
+        "Follows the team’s safety and error standards",
+        "Tested and lint-clean before anyone reviews it"
       ]
     },
-    ask: "What rules does every new joiner on your team get wrong in their first month?",
-    tip: "Point out that the prompt is identical in both. The only difference is one file in the repo."
+    ask: "What would the first five lines of your team’s CLAUDE.md say?",
+    tip: "Mention /init: it drafts a CLAUDE.md from the repo. Then add the standards your reviewers keep repeating, and keep it short."
   },
   {
     title: "Build UI from Figma, not from a screenshot",
@@ -1232,17 +1241,19 @@ const INTRO = {
   tip: "Keep this to two minutes. The examples make the argument; this screen just gives the room a map."
 };
 
+const PAGE = { intro: true, moreUrl: "https://claude.ai/artifact/3HAwxA4o6X9vshGwy5HC6M", backUrl: null };
 const GROUPS = [
   { title: "Give it context", line: "It only knows what it can see or what you tell it.",
-    members: ["Give context, not just a task", "Write it once in CLAUDE.md", "Build UI from Figma, not from a screenshot"] },
+    members: ["Write it once in CLAUDE.md", "Build UI from Figma, not from a screenshot"] },
   { title: "Think before editing", line: "Understand the problem and agree on the approach before code changes.",
-    members: ["Plan before touching files", "Find the cause, not a place to hide it"] },
+    members: ["Plan before touching files"] },
   { title: "Change only what’s needed", line: "Small changes in your team’s style are fast to review.",
-    members: ["Turn team standards into a skill", "Ask for the smallest change"] },
+    members: ["Turn team standards into a skill"] },
   { title: "Automate and guard", line: "Let config handle the routine and block the risky, so you don’t have to watch.",
     members: ["Use hooks for rules that must never break", "Allow the safe, deny the risky"] }
 ];
 const ORDER = GROUPS.flatMap((g) => g.members);
+for (let k = EXAMPLES.length - 1; k >= 0; k--) if (!ORDER.includes(EXAMPLES[k].title)) EXAMPLES.splice(k, 1);
 EXAMPLES.sort((x, y) => ORDER.indexOf(x.title) - ORDER.indexOf(y.title));
 EXAMPLES.forEach((ex) => { ex.group = GROUPS.findIndex((g) => g.members.includes(ex.title)); });
 
@@ -1253,7 +1264,7 @@ const panes = $("panes");
 const notes = $("notes");
 const modeButtons = [...document.querySelectorAll(".modes button")];
 
-let index = -1;
+let index = PAGE.intro ? -1 : 0;
 let mode = "before";
 let scale = 1;
 
@@ -1300,12 +1311,14 @@ function paneHTML(side, data) {
 }
 
 function renderList() {
-  let html = `<li><button class="start" data-i="-1" data-n="">Start here</button></li>`;
+  let html = PAGE.intro ? `<li><button class="start" data-i="-1" data-n="">Start here</button></li>` : "";
   let last = -1;
   EXAMPLES.forEach((ex, i) => {
     if (ex.group !== last) { html += `<li class="group">${escapeHTML(GROUPS[ex.group].title)}</li>`; last = ex.group; }
     html += `<li><button data-i="${i}" data-n="${i + 1}">${escapeHTML(ex.title)}</button></li>`;
   });
+  if (PAGE.moreUrl) html += `<li class="more"><a href="${PAGE.moreUrl}" target="_blank" rel="noopener">More examples</a></li>`;
+  if (PAGE.backUrl) html += `<li class="more"><a href="${PAGE.backUrl}" target="_blank" rel="noopener">Back to the main session</a></li>`;
   list.innerHTML = html;
   list.querySelectorAll("button").forEach((b) =>
     b.addEventListener("click", () => go(parseInt(b.dataset.i, 10), "before"))
@@ -1366,8 +1379,9 @@ function render(animate = true) {
 }
 
 function go(i, newMode) {
-  const total = EXAMPLES.length + 1;
-  index = ((i + 1 + total) % total) - 1;
+  const first = PAGE.intro ? -1 : 0;
+  const total = EXAMPLES.length - first;
+  index = ((i - first + total) % total) + first;
   if (newMode) mode = newMode;
   render();
   $("stage").scrollTop = 0;
@@ -1437,7 +1451,7 @@ document.addEventListener("keydown", (e) => {
 
 const fromHash = parseInt(location.hash.slice(1), 10);
 if (fromHash >= 1 && fromHash <= EXAMPLES.length) index = fromHash - 1;
-else index = -1;
+else index = PAGE.intro ? -1 : 0;
 
 applyScale();
 syncThemeButton();
